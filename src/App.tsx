@@ -179,47 +179,56 @@ export default function App() {
   }
 
   return (
-    <Routes>
-      <Route path="/" element={user ? <Navigate to="/app/dashboard" /> : <LandingPage theme={theme} toggleTheme={toggleTheme} />} />
-      <Route path="/privacy" element={<PrivacyPage theme={theme} toggleTheme={toggleTheme} />} />
-      <Route path="/faq" element={<FAQPage theme={theme} toggleTheme={toggleTheme} />} />
-      
-      {user && (
-        <Route path="/app" element={
-          <MainLayout 
-            user={user} 
-            groups={groups} 
-            theme={theme} 
-            toggleTheme={toggleTheme} 
-            isSidebarOpen={isSidebarOpen} 
-            setIsSidebarOpen={setIsSidebarOpen}
-            onLogout={logOut}
-          />
-        }>
-          <Route index element={<Navigate to="/app/dashboard" replace />} />
-          <Route path="dashboard" element={
-            <motion.div
-              initial={{ opacity: 0, y: 10, filter:'blur(10px)' }}
-              animate={{ opacity: 1, y: 0, filter:'blur(0px)' }}
-              exit={{ opacity: 0, y: -10, filter:'blur(10px)' }}
-              transition={{ type: "spring", stiffness: 100, damping: 20 }}
-              className="p-10 max-w-7xl mx-auto"
-            >
-              <Dashboard 
-                user={user} 
-                groups={groups} 
-                theme={theme}
-              />
-            </motion.div>
-          } />
-          <Route path="subscriptions" element={<SubscriptionsPage user={user} />} />
-          <Route path="savings" element={<SavingsPage user={user} />} />
-          <Route path="settings" element={<SettingsPage user={user} theme={theme} toggleTheme={toggleTheme} onBack={() => navigate('/app/dashboard')} onLogout={logOut} />} />
-          <Route path="groups/:id" element={<GroupDetailPage user={user} theme={theme} />} />
-        </Route>
-      )}
+    <>
+      <Routes>
+        <Route path="/" element={user ? <Navigate to="/app/dashboard" /> : <LandingPage theme={theme} toggleTheme={toggleTheme} />} />
+        <Route path="/privacy" element={<PrivacyPage theme={theme} toggleTheme={toggleTheme} />} />
+        <Route path="/faq" element={<FAQPage theme={theme} toggleTheme={toggleTheme} />} />
+        
+        {user && (
+          <Route path="/app" element={
+            <MainLayout 
+              user={user} 
+              groups={groups} 
+              theme={theme} 
+              toggleTheme={toggleTheme} 
+              isSidebarOpen={isSidebarOpen} 
+              setIsSidebarOpen={setIsSidebarOpen}
+              onLogout={logOut}
+            />
+          }>
+            <Route index element={<Navigate to="/app/dashboard" replace />} />
+            <Route path="dashboard" element={
+              <motion.div
+                initial={{ opacity: 0, y: 10, filter:'blur(10px)' }}
+                animate={{ opacity: 1, y: 0, filter:'blur(0px)' }}
+                exit={{ opacity: 0, y: -10, filter:'blur(10px)' }}
+                transition={{ type: "spring", stiffness: 100, damping: 20 }}
+                className="p-10 max-w-7xl mx-auto"
+              >
+                <Dashboard 
+                  user={user} 
+                  groups={groups} 
+                  theme={theme}
+                />
+              </motion.div>
+            } />
+            <Route path="subscriptions" element={<SubscriptionsPage user={user} />} />
+            <Route path="savings" element={<SavingsPage user={user} />} />
+            <Route path="settings" element={<SettingsPage user={user} theme={theme} toggleTheme={toggleTheme} onBack={() => navigate('/app/dashboard')} onLogout={logOut} />} />
+            <Route path="groups/:id" element={<GroupDetailPage user={user} theme={theme} />} />
+          </Route>
+        )}
 
-      <Route path="*" element={<Navigate to="/" />} />
-    </Routes>
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+      {user && (
+        <CreateGroupModal 
+          isOpen={isCreateModalOpen} 
+          onClose={() => setIsCreateModalOpen(false)} 
+          user={user} 
+        />
+      )}
+    </>
   );
 }

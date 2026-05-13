@@ -23,7 +23,7 @@ export default function LandingPage({ theme, toggleTheme }: { theme: 'light' | '
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-[0_10px_20px_-10px_rgba(0,0,0,0.1)] ${showHowItWorks ? 'bg-zinc-900 dark:bg-white' : 'bg-white'}`}>
               <Wallet weight="duotone" className={`w-6 h-6 ${showHowItWorks ? 'text-white dark:text-zinc-900' : 'text-zinc-900'}`} />
             </div>
-            <span className={`text-xl font-bold tracking-tight font-display transition-colors ${showHowItWorks ? 'text-zinc-900 dark:text-white' : 'text-white'}`}>Budgeted</span>
+            <span className={`text-xl font-bold tracking-tight font-display transition-colors ${showHowItWorks ? 'text-zinc-900 dark:text-white' : 'text-white'}`}>Budgetly</span>
           </div>
           <div className={`flex items-center gap-4 border p-1.5 rounded-2xl backdrop-blur-md transition-colors ${showHowItWorks ? 'border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50' : 'border-white/20 bg-white/10'}`}>
             <button 

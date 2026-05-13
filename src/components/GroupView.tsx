@@ -21,6 +21,7 @@ import {
   PencilSimple as Pencil,
   X,
   Wallet,
+  FileCsv,
   Funnel as Filter
 } from '@phosphor-icons/react';
 import Markdown from'react-markdown';
@@ -30,6 +31,7 @@ import AddMemberModal from './group/AddMemberModal';
 import DebtSimplification from './group/DebtSimplification';
 import GroupCharts from './group/GroupCharts';
 import TransactionHistory from './group/TransactionHistory';
+import ImportCSVModal from './group/ImportCSVModal';
 import { 
   LineChart, 
   Line, 
@@ -80,6 +82,7 @@ export default function GroupView({ groupId, user, onBack, theme }: GroupViewPro
   const expenseModule = useExpenseModule();
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
+  const [isImportCSVOpen, setIsImportCSVOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<BaseExpense | null>(null);
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -462,6 +465,13 @@ export default function GroupView({ groupId, user, onBack, theme }: GroupViewPro
             AI Insights
           </button>
           <button 
+            onClick={() => setIsImportCSVOpen(true)}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-2xl text-sm font-bold text-zinc-900 dark:text-white hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:border-emerald-200 dark:hover:border-emerald-800 hover:shadow-[0_10px_20px_-10px_rgba(0,0,0,0.05)] transition-all active:scale-95"
+          >
+            <FileCsv className="w-4 h-4" />
+            Import CSV
+          </button>
+          <button 
             onClick={() => {
               setEditingExpense(null);
               setIsAddExpenseOpen(true);
@@ -661,6 +671,13 @@ export default function GroupView({ groupId, user, onBack, theme }: GroupViewPro
           setEditingExpense(null);
         }}
         editingExpense={editingExpense}
+        user={user}
+        groupId={groupId}
+      />
+
+      <ImportCSVModal
+        isOpen={isImportCSVOpen}
+        onClose={() => setIsImportCSVOpen(false)}
         user={user}
         groupId={groupId}
       />

@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 export default function FAQPage({ theme, toggleTheme }: { theme: 'light' | 'dark', toggleTheme: () => void }) {
   const faqs = [
     {
-      q: "Is Budgeted really free?",
+      q: "Is Budgetly really free?",
       a: "Yes! The core functionality to track expenses and manage groups is entirely free to use."
     },
     {
@@ -13,7 +13,7 @@ export default function FAQPage({ theme, toggleTheme }: { theme: 'light' | 'dark
     },
     {
       q: "Can I use it for my household?",
-      a: "Absolutely. Budgeted is perfect for roommates, couples, and family households where bills need to be tracked and split."
+      a: "Absolutely. Budgetly is perfect for roommates, couples, and family households where bills need to be tracked and split."
     },
     {
       q: "Does it support different currencies?",
@@ -24,7 +24,7 @@ export default function FAQPage({ theme, toggleTheme }: { theme: 'light' | 'dark
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 font-sans text-zinc-900 dark:text-white transition-colors duration-300">
       <nav className="border-b border-zinc-200 dark:border-zinc-800 p-6 flex justify-between items-center max-w-5xl mx-auto">
-        <Link to="/" className="font-bold text-xl font-display">Budgeted</Link>
+        <Link to="/" className="font-bold text-xl font-display">Budgetly</Link>
         <Link to="/" className="text-sm font-medium hover:text-emerald-600 transition-colors">Back Home</Link>
       </nav>
       <main className="max-w-3xl mx-auto px-6 py-16">

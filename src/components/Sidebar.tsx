@@ -43,12 +43,12 @@ export default function Sidebar({
   const isActive = (path: string) => location.pathname === path;
   const isGroupActive = (id: string) => location.pathname === `/app/groups/${id}`;
 
-  const sidebarVariants = {
+  const sidebarVariants: any = {
     closed: { x: '-100%', transition: { type: 'spring', stiffness: 300, damping: 30 } },
     open: { x: 0, transition: { type: 'spring', stiffness: 300, damping: 30, staggerChildren: 0.1, delayChildren: 0.2 } }
   };
 
-  const itemVariants = {
+  const itemVariants: any = {
     closed: { opacity: 0, x: -10 },
     open: { opacity: 1, x: 0 }
   };
@@ -89,7 +89,7 @@ export default function Sidebar({
               <div className="w-12 h-12 bg-zinc-900 dark:bg-white rounded-2xl flex items-center justify-center shadow-2xl group-hover:scale-110 transition-all duration-700 ease-fluid">
                 <Wallet weight="duotone" className="w-7 h-7 text-white dark:text-zinc-900 group-hover:rotate-12 transition-transform duration-500" />
               </div>
-              <span className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white font-display">Budgeted</span>
+              <span className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white font-display">Budgetly</span>
             </div>
             <button 
               onClick={() => setIsSidebarOpen(false)}

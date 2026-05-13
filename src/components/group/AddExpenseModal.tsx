@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X } from '@phosphor-icons/react';
+import { X, Sparkle as Sparkles, Spinner } from '@phosphor-icons/react';
 import { BaseExpense } from '../../domain/expenses/types';
 import { useCurrency } from '../../hooks/useCurrency';
 import { CATEGORIES } from '../../types';
@@ -8,6 +8,7 @@ import { useExpenseModule } from '../../domain/expenses/context';
 import { handleFirestoreError, OperationType } from '../../utils/errorHandling';
 import { User } from 'firebase/auth';
 import { serverTimestamp, Timestamp } from 'firebase/firestore';
+import { GoogleGenAI, Type } from "@google/genai";
 
 interface AddExpenseModalProps {
   isOpen: boolean;
@@ -24,6 +25,8 @@ export default function AddExpenseModal({ isOpen, onClose, groupId, user, editin
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [isScanning, setIsScanning] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (editingExpense) {
@@ -38,6 +41,67 @@ export default function AddExpenseModal({ isOpen, onClose, groupId, user, editin
       setDate(new Date().toISOString().split('T')[0]);
     }
   }, [editingExpense, isOpen]);
+
+  const handleScanReceipt = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsScanning(true);
+    try {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64Data = (reader.result as string).split(',')[1];
+        
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        const response = await ai.models.generateContent({
+          model: 'gemini-3-flash-preview',
+          contents: {
+            parts: [
+              {
+                inlineData: {
+                  data: base64Data,
+                  mimeType: file.type,
+                },
+              },
+              {
+                text: 'Extract the receipt details. Determine the total amount, description/merchant name, date (YYYY-MM-DD), and categorize it into one of these: Housing, Food, Transportation, Utilities, Entertainment, Shopping, Health, Other. If you cannot determine a value, make a best guess or return empty string.',
+              },
+            ],
+          },
+          config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                amount: { type: Type.NUMBER, description: "Total amount on receipt" },
+                description: { type: Type.STRING, description: "Merchant name or brief description" },
+                category: { type: Type.STRING, description: "Category from the list provided" },
+                date: { type: Type.STRING, description: "Date in YYYY-MM-DD format" }
+              },
+              required: ["amount", "description", "category", "date"]
+            }
+          }
+        });
+
+        const jsonStr = response.text.trim();
+        const extracted = JSON.parse(jsonStr);
+        
+        if (extracted.amount) setAmount(extracted.amount.toString());
+        if (extracted.description) setDescription(extracted.description);
+        if (extracted.category && CATEGORIES.includes(extracted.category)) setCategory(extracted.category);
+        if (extracted.date) setDate(extracted.date);
+        
+        setIsScanning(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error("Failed to scan receipt:", error);
+      setIsScanning(false);
+    }
+    
+    // reset input
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   const handleAddExpense = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,7 +145,7 @@ export default function AddExpenseModal({ isOpen, onClose, groupId, user, editin
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <motion.div 
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }} 
@@ -98,7 +162,7 @@ export default function AddExpenseModal({ isOpen, onClose, groupId, user, editin
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             className="relative w-full max-w-md bg-white dark:bg-zinc-900 rounded-[40px] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] p-6 sm:p-10 outline-none"
           >
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center justify-between mb-6">
               <h3 id="add-expense-title" className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white font-display">
                 {editingExpense ? 'Edit Expense' : 'Add Expense'}
               </h3>
@@ -111,6 +175,32 @@ export default function AddExpenseModal({ isOpen, onClose, groupId, user, editin
                 <X className="w-5 h-5 text-zinc-500" />
               </button>
             </div>
+            
+            {!editingExpense && (
+              <div className="mb-6">
+                 <input 
+                   type="file" 
+                   accept="image/*" 
+                   className="hidden" 
+                   ref={fileInputRef} 
+                   onChange={handleScanReceipt} 
+                 />
+                 <button
+                   type="button"
+                   onClick={() => fileInputRef.current?.click()}
+                   disabled={isScanning}
+                   className="w-full py-4 px-4 border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 font-bold rounded-2xl flex items-center justify-center gap-3 transition-colors outline-none focus:ring-2 focus:ring-emerald-500/50"
+                 >
+                   {isScanning ? (
+                     <Spinner className="w-5 h-5 animate-spin" />
+                   ) : (
+                     <Sparkles className="w-5 h-5" />
+                   )}
+                   {isScanning ? 'Scanning Receipt...' : 'Auto-fill from Receipt'}
+                 </button>
+              </div>
+            )}
+            
             <form onSubmit={handleAddExpense} className="space-y-6">
               <div>
                 <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-[0.15em] mb-2">Amount</label>
@@ -124,7 +214,7 @@ export default function AddExpenseModal({ isOpen, onClose, groupId, user, editin
                     className="w-full pl-10 pr-5 py-4 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-mono font-bold text-lg dark:text-white"
                     placeholder="0.00"
                     required
-                    autoFocus
+                    autoFocus={!editingExpense}
                   />
                 </div>
               </div>
