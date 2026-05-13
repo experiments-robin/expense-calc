@@ -7,6 +7,7 @@ import { User } from'firebase/auth';
 import { GroupType, BudgetType } from'../types';
 import { handleFirestoreError, OperationType } from'../utils/errorHandling';
 import { useCurrency } from '../hooks/useCurrency';
+import { useNavigate } from 'react-router-dom';
 
 interface CreateGroupModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ interface CreateGroupModalProps {
 
 export default function CreateGroupModal({ isOpen, onClose, user }: CreateGroupModalProps) {
   const { currencySymbol } = useCurrency();
+  const navigate = useNavigate();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [type, setType] = useState<GroupType>('household');
@@ -72,6 +74,7 @@ export default function CreateGroupModal({ isOpen, onClose, user }: CreateGroupM
       setType('household');
       setMaxBudget('');
       setBudgetType('monthly');
+      navigate(`/app/groups/${groupRef.id}`);
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE,'groups');
     } finally {

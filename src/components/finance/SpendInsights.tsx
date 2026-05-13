@@ -2,14 +2,15 @@ import { useState, useMemo } from 'react';
 import { User } from 'firebase/auth';
 import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip, Cell, YAxis } from 'recharts';
 import { Warning, TrendUp } from '@phosphor-icons/react';
-import { Group, Expense, CATEGORIES } from '../../types';
+import { Group, CATEGORIES } from '../../types';
+import { BaseExpense } from '../../domain/expenses/types';
 import { useCurrency } from '../../hooks/useCurrency';
 import { getColorForCategory } from '../../utils/colors';
 
 interface SpendInsightsProps {
   user: User;
   groups: Group[];
-  expenses: Expense[] | any[]; // any because DashboardExpense is used
+  expenses: BaseExpense[];
   theme: 'light' | 'dark';
 }
 

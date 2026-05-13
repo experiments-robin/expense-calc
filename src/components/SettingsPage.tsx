@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { User, onAuthStateChanged } from 'firebase/auth';
-import { CaretLeft, Globe, Bell, CurrencyDollar, MapPin, HandTap } from '@phosphor-icons/react';
-import { Link } from 'react-router-dom';
+import { User } from 'firebase/auth';
+import { CaretLeft, Bell, CurrencyDollar, MapPin, SignOut } from '@phosphor-icons/react';
 import { useCurrency } from '../hooks/useCurrency';
 
-export default function SettingsPage({ user, theme, toggleTheme, onBack }: { user: User, theme: string, toggleTheme: () => void, onBack: () => void }) {
+export default function SettingsPage({ user, theme, toggleTheme, onBack, onLogout }: { user: User, theme: string, toggleTheme: () => void, onBack: () => void, onLogout: () => void }) {
   const { currencyCode, setCurrency } = useCurrency();
   const [localCurrency, setLocalCurrency] = useState(currencyCode);
   const [timezone, setTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
@@ -23,7 +22,7 @@ export default function SettingsPage({ user, theme, toggleTheme, onBack }: { use
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.98 }}
-      className="p-6 md:p-10 max-w-4xl mx-auto"
+      className="p-4 md:p-8 max-w-5xl mx-auto"
     >
       <div className="flex items-center gap-4 mb-8">
         <button 
@@ -32,88 +31,125 @@ export default function SettingsPage({ user, theme, toggleTheme, onBack }: { use
         >
           <CaretLeft className="w-5 h-5 text-zinc-600 dark:text-zinc-400" />
         </button>
-        <h1 className="text-3xl font-display font-bold text-zinc-900 dark:text-white">Profile & Settings</h1>
+        <h1 className="text-3xl font-display font-bold tracking-tight text-zinc-900 dark:text-white">Profile & Settings</h1>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-8">
-        <div className="md:col-span-1 space-y-6">
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 rounded-3xl shadow-sm text-center">
-             <img src={user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName}&background=random`} alt="" className="w-24 h-24 rounded-2xl mx-auto shadow-sm border border-zinc-200 dark:border-white/10 mb-4" />
-             <h3 className="font-bold text-lg text-zinc-900 dark:text-white mb-1">{user.displayName}</h3>
-             <p className="text-sm text-zinc-500 truncate font-mono">{user.email}</p>
+      <div className="grid md:grid-cols-12 gap-8">
+        {/* Profile Card */}
+        <div className="md:col-span-4 space-y-6">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-8 rounded-3xl shadow-sm text-center relative overflow-hidden group">
+             <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+             <img src={user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName}&background=random`} alt="" className="w-28 h-28 rounded-3xl mx-auto shadow-md border border-white dark:border-zinc-800 mb-6 object-cover bg-white" />
+             <h3 className="font-bold text-xl text-zinc-900 dark:text-white mb-1 tracking-tight">{user.displayName}</h3>
+             <p className="text-sm text-zinc-500 truncate font-mono mb-8">{user.email}</p>
+             
+             <button
+               onClick={onLogout}
+               className="w-full py-3.5 px-4 flex items-center justify-center gap-2 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 font-bold rounded-2xl hover:bg-red-100 dark:hover:bg-red-500/20 active:scale-[0.98] transition-all"
+             >
+               <SignOut className="w-5 h-5" />
+               Sign Out
+             </button>
           </div>
         </div>
 
-        <div className="md:col-span-2 space-y-6">
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 sm:p-8 shadow-sm">
-            <h2 className="text-xl font-bold mb-6 text-zinc-900 dark:text-white border-b border-zinc-100 dark:border-zinc-800 pb-4">Preferences</h2>
+        {/* Settings Content */}
+        <div className="md:col-span-8 space-y-6">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 sm:p-10 shadow-sm relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             
-            <div className="space-y-6">
-              <div>
-                <label className="flex items-center gap-2 text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">
-                  <CurrencyDollar className="w-4 h-4 text-emerald-500" />
+            <h2 className="text-xl font-bold mb-8 text-zinc-900 dark:text-white border-b border-zinc-100 dark:border-zinc-800 pb-4 relative z-10">Preferences</h2>
+            
+            <div className="space-y-8 relative z-10">
+              {/* Currency Select */}
+              <div className="group">
+                <label className="flex items-center gap-2 text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-3">
+                  <span className="w-6 h-6 flex items-center justify-center bg-emerald-100 dark:bg-emerald-500/20 rounded-lg text-emerald-600 dark:text-emerald-400">
+                    <CurrencyDollar className="w-4 h-4" />
+                  </span>
                   Primary Currency
                 </label>
-                <select 
-                  value={localCurrency}
-                  onChange={(e) => setLocalCurrency(e.target.value)}
-                  className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-zinc-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500/50 appearance-none"
-                >
-                  <option value="INR">INR (₹)</option>
-                  <option value="USD">USD ($)</option>
-                  <option value="EUR">EUR (€)</option>
-                  <option value="GBP">GBP (£)</option>
-                  <option value="JPY">JPY (¥)</option>
-                </select>
+                <div className="relative">
+                  <select 
+                    value={localCurrency}
+                    onChange={(e) => setLocalCurrency(e.target.value)}
+                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl px-5 py-4 text-zinc-900 dark:text-white font-medium outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all appearance-none cursor-pointer"
+                  >
+                    <option value="INR">INR (₹) - Indian Rupee</option>
+                    <option value="USD">USD ($) - US Dollar</option>
+                    <option value="EUR">EUR (€) - Euro</option>
+                    <option value="GBP">GBP (£) - British Pound</option>
+                    <option value="JPY">JPY (¥) - Japanese Yen</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                    <CaretLeft className="w-4 h-4 text-zinc-400 -rotate-90" />
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <label className="flex items-center gap-2 text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">
-                  <MapPin className="w-4 h-4 text-blue-500" />
-                  Timezone Analysis
+              {/* Timezone Select */}
+              <div className="group">
+                <label className="flex items-center gap-2 text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-3">
+                  <span className="w-6 h-6 flex items-center justify-center bg-blue-100 dark:bg-blue-500/20 rounded-lg text-blue-600 dark:text-blue-400">
+                    <MapPin className="w-4 h-4" />
+                  </span>
+                  Timezone Configuration
                 </label>
-                <select 
-                  value={timezone}
-                  onChange={(e) => setTimezone(e.target.value)}
-                  className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-zinc-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500/50 appearance-none"
-                >
-                  <option value="UTC">UTC</option>
-                  <option value="America/New_York">America/New York</option>
-                  <option value="America/Los_Angeles">America/Los Angeles</option>
-                  <option value="Europe/London">Europe/London</option>
-                  <option value="Asia/Tokyo">Asia/Tokyo</option>
-                  <option value={Intl.DateTimeFormat().resolvedOptions().timeZone}>Current: {Intl.DateTimeFormat().resolvedOptions().timeZone}</option>
-                </select>
+                <div className="relative">
+                  <select 
+                    value={timezone}
+                    onChange={(e) => setTimezone(e.target.value)}
+                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl px-5 py-4 text-zinc-900 dark:text-white font-medium outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all appearance-none cursor-pointer"
+                  >
+                    <option value="UTC">UTC Universal Time</option>
+                    <option value="America/New_York">America / New York</option>
+                    <option value="America/Los_Angeles">America / Los Angeles</option>
+                    <option value="Europe/London">Europe / London</option>
+                    <option value="Asia/Tokyo">Asia / Tokyo</option>
+                    <option value={Intl.DateTimeFormat().resolvedOptions().timeZone}>Current: {Intl.DateTimeFormat().resolvedOptions().timeZone.replace('_', ' ')}</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                    <CaretLeft className="w-4 h-4 text-zinc-400 -rotate-90" />
+                  </div>
+                </div>
               </div>
 
-              <div className="p-4 bg-zinc-50 dark:bg-zinc-950 rounded-2xl border border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center">
-                    <Bell className="w-5 h-5" />
+              {/* Notifications Toggle */}
+              <div className="p-5 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-950 dark:hover:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 transition-colors flex items-center justify-between group cursor-pointer" onClick={() => setPushEnabled(!pushEnabled)}>
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-[14px] flex items-center justify-center transition-transform group-hover:scale-105">
+                    <Bell className="w-6 h-6" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-zinc-900 dark:text-white text-sm">Push Notifications</h4>
-                    <p className="text-xs text-zinc-500">Enable for PWA functionality</p>
+                    <h4 className="font-bold text-zinc-900 dark:text-white text-[15px] mb-0.5">Push Notifications</h4>
+                    <p className="text-sm text-zinc-500 dark:text-zinc-400">Receive alerts when groups update</p>
                   </div>
                 </div>
                 <button 
-                  onClick={() => setPushEnabled(!pushEnabled)}
-                  className={`w-12 h-6 rounded-full transition-colors relative flex items-center px-1 ${pushEnabled ? 'bg-emerald-500' : 'bg-zinc-300 dark:bg-zinc-700'}`}
+                  className={`w-14 h-8 rounded-full transition-all relative flex items-center px-1 border ${pushEnabled ? 'bg-emerald-500 border-emerald-600' : 'bg-zinc-300 dark:bg-zinc-700 border-zinc-400 dark:border-zinc-600'}`}
                 >
-                  <div className={`w-4 h-4 bg-white rounded-full transition-transform ${pushEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
+                  <div className={`w-6 h-6 bg-white rounded-full transition-all shadow-sm ${pushEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
                 </button>
               </div>
             </div>
 
-            <div className="mt-8 pt-6 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
-              <div>
-                {savedMessage && <span className="text-emerald-600 font-medium text-sm">Saved successfully!</span>}
+            <div className="mt-10 pt-6 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between relative z-10">
+              <div className="h-6 flex items-center">
+                {savedMessage && (
+                  <motion.span 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-emerald-600 dark:text-emerald-400 font-bold text-sm bg-emerald-50 dark:bg-emerald-500/10 px-3 py-1.5 rounded-lg"
+                  >
+                    ✓ Preferences Saved
+                  </motion.span>
+                )}
               </div>
               <button 
                 onClick={handleSave}
-                className="px-6 py-3 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold rounded-xl hover:opacity-90 active:scale-95 transition-all shadow-[0_10px_20px_-10px_rgba(0,0,0,0.1)]"
+                className="px-8 py-3.5 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-zinc-900 font-bold rounded-2xl active:scale-95 transition-all shadow-[0_10px_20px_-10px_rgba(0,0,0,0.2)] dark:shadow-[0_10px_20px_-10px_rgba(255,255,255,0.1)] focus:ring-4 focus:ring-zinc-900/20 dark:focus:ring-white/20 outline-none"
               >
-                Save Preferences
+                Save Changes
               </button>
             </div>
           </div>

@@ -29,13 +29,13 @@ import ZeroBasedBudgeting from './ZeroBasedBudgeting';
 import SubscriptionsList from './finance/SubscriptionsList';
 import SavingsGoalsList from './finance/SavingsGoalsList';
 import SpendInsights from './finance/SpendInsights';
+import { useNavigate } from 'react-router-dom';
 
 import { getColorForCategory } from '../utils/colors';
 
 interface DashboardProps {
   user: User;
   groups: Group[];
-  onSelectGroup: (id: string) => void;
   theme:'light' |'dark';
 }
 
@@ -50,8 +50,9 @@ interface DashboardExpense extends BaseExpense {
   groupId: string;
 }
 
-export default function Dashboard({ user, groups, onSelectGroup, theme }: DashboardProps) {
+export default function Dashboard({ user, groups, theme }: DashboardProps) {
   const { currencySymbol } = useCurrency();
+  const navigate = useNavigate();
   const [recentExpenses, setRecentExpenses] = useState<DashboardExpense[]>([]);
   const [allExpenses, setAllExpenses] = useState<DashboardExpense[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -290,7 +291,7 @@ export default function Dashboard({ user, groups, onSelectGroup, theme }: Dashbo
             onClick={() => {
               if (groups.length === 0) return;
               if (groups.length === 1) {
-                onSelectGroup(groups[0].id);
+                navigate(`/app/groups/${groups[0].id}`);
               } else {
                 setIsGroupsListOpen(true);
               }
@@ -322,7 +323,7 @@ export default function Dashboard({ user, groups, onSelectGroup, theme }: Dashbo
           <button 
             onClick={() => {
               if (recentExpenses.length === 0) return;
-              onSelectGroup(recentExpenses[0].groupId);
+              navigate(`/app/groups/${recentExpenses[0].groupId}`);
             }}
             className={`w-full text-left double-bezel-inner p-8 relative overflow-hidden transition-all duration-700 ease-fluid ${recentExpenses.length > 0 ?'cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900/50' :'cursor-default'}`}
           >
@@ -351,7 +352,7 @@ export default function Dashboard({ user, groups, onSelectGroup, theme }: Dashbo
           <button 
             onClick={() => {
               if (alerts.length === 0) return;
-              onSelectGroup(alerts[0].groupId);
+              navigate(`/app/groups/${alerts[0].groupId}`);
             }}
             className={`w-full text-left double-bezel-inner p-8 relative overflow-hidden transition-all duration-700 ease-fluid ${alerts.length > 0 ?'cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/10' :'cursor-default'}`}
           >
@@ -406,7 +407,7 @@ export default function Dashboard({ user, groups, onSelectGroup, theme }: Dashbo
                   <button
                     key={group.id}
                     onClick={() => {
-                      onSelectGroup(group.id);
+                      navigate(`/app/groups/${group.id}`);
                       setIsGroupsListOpen(false);
                     }}
                     className="w-full flex items-center justify-between p-4 rounded-2xl bg-zinc-50 dark:bg-white/5 hover:bg-zinc-100 dark:hover:bg-white/10 border border-zinc-100 dark:border-white/5 transition-all text-left group"

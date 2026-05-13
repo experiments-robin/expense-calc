@@ -67,19 +67,23 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
     // Auth tokens NEVER contain custom claims in this environment.
     // We look up roles in the group members subcollection.
     function isGroupAdmin(groupId) {
-      return isSignedIn() && 
+      return isVerified() && 
              get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)).data.role == 'admin';
     }
 
     function isMember(data) {
-      return isSignedIn() && request.auth.uid in data.get('memberIds', []);
+      return isVerified() && request.auth.uid in data.get('memberIds', []);
     }
 
     function isGroupMember(groupId) {
-      return isSignedIn() && 
+      return isVerified() && 
              exists(/databases/$(database)/documents/groups/$(groupId)) && 
              request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.get('memberIds', []);
     }
@@ -97,7 +101,7 @@ service cloud.firestore {
     }
 
     function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+      return isVerified() && request.auth.uid == userId;
     }
 
     // ===============================================================
@@ -107,31 +111,31 @@ service cloud.firestore {
     function isValidUser(data) {
       return data.uid == request.auth.uid &&
              data.email is string && data.email.size() <= 256 &&
-             (data.displayName == null || (data.displayName is string && data.displayName.size() <= 100)) &&
-             (data.photoURL == null || (data.photoURL is string && data.photoURL.size() <= 500)) &&
-             (data.categoryLimits == null || data.categoryLimits is map) &&
-             data.createdAt == request.time;
+             (!('displayName' in data) || data.displayName == null || (data.displayName is string && data.displayName.size() <= 100)) &&
+             (!('photoURL' in data) || data.photoURL == null || (data.photoURL is string && data.photoURL.size() <= 500)) &&
+             (!('categoryLimits' in data) || data.categoryLimits == null || data.categoryLimits is map) &&
+             data.createdAt is timestamp;
     }
 
     function isValidSubscription(data) {
-      return data.name in ["Netflix", "Spotify", "Amazon Prime", "Gym Membership", "Internet Bill", "Mobile Plan", "Apple One", "Disney+", "Hulu", "YouTube Premium", "Xbox Game Pass", "PlayStation Plus", "Creative Cloud", "Office 365", "Other"] &&
+      return (data.name is string && data.name.size() <= 100) &&
              data.amount is number && data.amount > 0 &&
              data.cycle in ['weekly', 'monthly', 'yearly'] &&
              data.nextBillingDate is timestamp &&
              data.category is string &&
              data.active is bool &&
              data.userId == request.auth.uid &&
-             data.createdAt == request.time;
+             data.createdAt is timestamp;
     }
 
     function isValidSavingsGoal(data) {
-      return data.name in ["Emergency Fund", "Vacation", "New Car", "House Downpayment", "Wedding", "Laptop", "Phone", "Education", "Retirement", "Investment", "Gift", "Furniture", "Other"] &&
+      return (data.name is string && data.name.size() <= 100) &&
              data.targetAmount is number && data.targetAmount > 0 &&
              data.currentAmount is number && data.currentAmount >= 0 &&
-             (data.deadline == null || data.deadline is timestamp) &&
+             (!('deadline' in data) || data.deadline == null || data.deadline is timestamp) &&
              data.color is string &&
              data.userId == request.auth.uid &&
-             data.createdAt == request.time;
+             data.createdAt is timestamp;
     }
 
     function isValidGroup(data) {
@@ -140,10 +144,10 @@ service cloud.firestore {
              data.type in ['personal', 'household', 'trip', 'other'] &&
              data.memberIds is list && data.memberIds.size() >= 1 && data.memberIds.size() <= 50 &&
              data.memberIds[0] is string &&
-             data.createdAt == request.time &&
-             (data.description == null || (data.description is string && data.description.size() <= 500)) &&
-             (data.maxBudget == null || (data.maxBudget is number && data.maxBudget >= 0)) &&
-             (data.budgetType == null || data.budgetType in ['weekly', 'monthly', 'total']);
+             data.createdAt is timestamp &&
+             (!('description' in data) || data.description == null || (data.description is string && data.description.size() <= 500)) &&
+             (!('maxBudget' in data) || data.maxBudget == null || (data.maxBudget is number && data.maxBudget >= 0)) &&
+             (!('budgetType' in data) || data.budgetType == null || data.budgetType in ['weekly', 'monthly', 'total']);
     }
 
     function isValidExpense(data, groupId) {
@@ -152,16 +156,16 @@ service cloud.firestore {
              data.category is string && data.category.size() <= 50 &&
              data.paidBy is string && data.paidBy in get(/databases/$(database)/documents/groups/$(groupId)).data.memberIds &&
              data.date is timestamp &&
-             data.createdAt == request.time &&
-             (data.splitType == null || data.splitType in ['equal', 'percentage', 'exact']);
+             data.createdAt is timestamp &&
+             (!('splitType' in data) || data.splitType == null || data.splitType in ['equal', 'percentage', 'exact']);
     }
 
     function isValidGroupMember(data) {
       return data.uid is string && isValidId(data.uid) &&
              data.role in ['admin', 'member'] &&
-             data.joinedAt == request.time &&
-             (data.displayName == null || (data.displayName is string && data.displayName.size() <= 100)) &&
-             (data.email == null || (data.email is string && data.email.size() <= 256));
+             data.joinedAt is timestamp &&
+             (!('displayName' in data) || data.displayName == null || (data.displayName is string && data.displayName.size() <= 100)) &&
+             (!('email' in data) || data.email == null || (data.email is string && data.email.size() <= 256));
     }
 
     // ===============================================================
@@ -170,30 +174,30 @@ service cloud.firestore {
 
     // Users
     match /users/{userId} {
-      allow get: if isOwner(userId);
+      allow get: if isSignedIn() && request.auth.uid == userId;
       // Deny listing users to prevent PII scraping
       allow list: if false; 
       
-      allow create: if isOwner(userId) && 
+      allow create: if isSignedIn() && request.auth.uid == userId && 
                        incoming().keys().hasAll(['uid', 'email', 'createdAt']) &&
-                       isValidUser(incoming());
-                       
-      allow update: if isOwner(userId) && 
-                       incoming().uid == existing().uid &&
-                       incoming().createdAt == existing().createdAt &&
                        isValidUser(incoming()) &&
+                       incoming().createdAt == request.time;
+                       
+      allow update: if isSignedIn() && request.auth.uid == userId && 
+                       isValidUser(incoming()) &&
+                       incoming().createdAt == existing().createdAt && 
                        incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'email', 'categoryLimits']);
 
       match /subscriptions/{subId} {
-        allow read: if isOwner(userId) || (isOwner(userId) && resource.data.userId == request.auth.uid);
-        
-        allow list: if isOwner(userId) || (isOwner(userId) && resource.data.userId == request.auth.uid);
-        allow get: if isOwner(userId) || (isOwner(userId) && resource.data.userId == request.auth.uid);
+        allow read: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId);
         
         allow create: if isOwner(userId) &&
                          isValidId(subId) &&
                          incoming().keys().hasAll(['name', 'amount', 'cycle', 'nextBillingDate', 'category', 'active', 'userId', 'createdAt']) &&
-                         isValidSubscription(incoming());
+                         isValidSubscription(incoming()) &&
+                         incoming().createdAt == request.time;
                          
         allow update: if isOwner(userId) &&
                          incoming().userId == existing().userId &&
@@ -205,15 +209,15 @@ service cloud.firestore {
       }
 
       match /savingsGoals/{goalId} {
-        allow read: if isOwner(userId) || (isOwner(userId) && resource.data.userId == request.auth.uid);
-        
-        allow list: if isOwner(userId) || (isOwner(userId) && resource.data.userId == request.auth.uid);
-        allow get: if isOwner(userId) || (isOwner(userId) && resource.data.userId == request.auth.uid);
+        allow read: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId);
         
         allow create: if isOwner(userId) &&
                          isValidId(goalId) &&
                          incoming().keys().hasAll(['name', 'targetAmount', 'currentAmount', 'color', 'userId', 'createdAt']) &&
-                         isValidSavingsGoal(incoming());
+                         isValidSavingsGoal(incoming()) &&
+                         incoming().createdAt == request.time;
                          
         allow update: if isOwner(userId) &&
                          incoming().userId == existing().userId &&
@@ -227,28 +231,26 @@ service cloud.firestore {
 
     // Groups
     match /groups/{groupId} {
-      // allow get: if isSignedIn() && (request.auth.uid in resource.data.memberIds);
-      // Use resource.data for list filtering enforcement
-      allow read: if isSignedIn() && (request.auth.uid in resource.data.memberIds);
+      allow read: if isVerified() && (request.auth.uid in resource.data.memberIds);
       
-      allow create: if isSignedIn() && 
+      allow create: if isVerified() && 
                        isValidId(groupId) &&
                        incoming().keys().hasAll(['name', 'createdBy', 'type', 'memberIds', 'createdAt']) &&
-                       // Check that the creator is the ONLY member initially or at least in the list
                        request.auth.uid in incoming().memberIds &&
-                       isValidGroup(incoming());
+                       isValidGroup(incoming()) &&
+                       incoming().createdAt == request.time;
                        
-      allow update: if isSignedIn() && (request.auth.uid in existing().memberIds) &&
+      allow update: if isVerified() && (request.auth.uid in existing().memberIds) &&
                        incoming().createdBy == existing().createdBy &&
                        incoming().createdAt == existing().createdAt &&
                        isValidGroup(incoming()) && (
-                         // Action: Update Metadata
+                         // Action: Metadata update
                          incoming().diff(existing()).affectedKeys().hasOnly(['name', 'description', 'type', 'maxBudget', 'budgetType']) ||
-                         // Action: Manage Members (usually handled by separate logic, but whitelisting here for the core list)
+                         // Action: Member limit sync
                          incoming().diff(existing()).affectedKeys().hasOnly(['memberIds'])
                        );
                        
-      allow delete: if isSignedIn() && existing().createdBy == request.auth.uid;
+      allow delete: if isVerified() && existing().createdBy == request.auth.uid;
 
       // Expenses Subcollection
       match /expenses/{expenseId} {
@@ -257,12 +259,12 @@ service cloud.firestore {
         allow create: if isGroupMember(groupId) &&
                          isValidId(expenseId) &&
                          incoming().keys().hasAll(['amount', 'description', 'category', 'paidBy', 'date', 'createdAt']) &&
-                         isValidExpense(incoming(), groupId);
+                         isValidExpense(incoming(), groupId) &&
+                         incoming().createdAt == request.time;
                          
         allow update: if isGroupMember(groupId) &&
                          incoming().createdAt == existing().createdAt &&
                          isValidExpense(incoming(), groupId) && (
-                           // Only the person who paid or an admin can edit
                            (existing().paidBy == request.auth.uid || isGroupAdmin(groupId)) &&
                            incoming().diff(existing()).affectedKeys().hasOnly(['amount', 'description', 'category', 'paidBy', 'date', 'splitType'])
                          );
@@ -275,16 +277,14 @@ service cloud.firestore {
       match /members/{userId} {
         allow read: if isGroupMember(groupId);
         
-        allow create: if isSignedIn() &&
+        allow create: if isVerified() &&
                          isValidId(userId) &&
                          incoming().keys().hasAll(['uid', 'role', 'joinedAt']) &&
-                         isValidGroupMember(incoming()) && (
-                           // First member must be the creator and admin
+                         isValidGroupMember(incoming()) &&
+                         incoming().joinedAt == request.time && (
                            (getAfter(/databases/$(database)/documents/groups/$(groupId)).data.createdBy == request.auth.uid && 
                             userId == request.auth.uid && incoming().role == 'admin') ||
-                           // Admins can add others
                            isGroupAdmin(groupId) ||
-                           // Users can add themselves if they were invited (added to memberIds list on parent)
                            (userId == request.auth.uid && userId in get(/databases/$(database)/documents/groups/$(groupId)).data.memberIds)
                          );
                          
